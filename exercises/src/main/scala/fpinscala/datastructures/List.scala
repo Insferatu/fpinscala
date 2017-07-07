@@ -1,5 +1,7 @@
 package fpinscala.datastructures
 
+import scala.annotation.tailrec
+
 sealed trait List[+A] // `List` data type, parameterized on a type, `A`
 case object Nil extends List[Nothing] // A `List` data constructor representing the empty list
 /* Another data constructor, representing nonempty lists. Note that `tail` is another `List[A]`,
@@ -50,19 +52,108 @@ object List { // `List` companion object. Contains functions for creating and wo
     foldRight(ns, 1.0)(_ * _) // `_ * _` is more concise notation for `(x,y) => x * y`; see sidebar
 
 
-  def tail[A](l: List[A]): List[A] = ???
+  def tail[A](l: List[A]): List[A] = l match {
+    case Nil => Nil
+    case Cons(_, xs) => xs
+  }
 
-  def setHead[A](l: List[A], h: A): List[A] = ???
+  def setHead[A](l: List[A], h: A): List[A] = l match {
+    case Nil => Nil
+    case Cons(_, xs) => Cons(h, xs)
+  }
 
-  def drop[A](l: List[A], n: Int): List[A] = ???
+  def drop[A](l: List[A], n: Int): List[A] = {
+    @tailrec def step(l: List[A], n: Int): List[A] = {
+      if (n == 0) l
+      else l match {
+        case Nil => Nil
+        case Cons(_, xs) => step(xs, n - 1)
+      }
+    }
 
-  def dropWhile[A](l: List[A], f: A => Boolean): List[A] = ???
+    step(l, n)
+  }
 
-  def init[A](l: List[A]): List[A] = ???
+  @tailrec def dropWhile[A](l: List[A], f: A => Boolean): List[A] = l match {
+    case Cons(_, xs) if f(x) => dropWhile(xs, f)
+    case ll => ll
+  }
 
-  def length[A](l: List[A]): Int = ???
+  def init[A](l: List[A]): List[A] = l match {
+    case Nil => Nil
+    case Cons(_, Nil) => Nil
+    case Cons(x, xs) => Cons(x, init(xs))
+  }
 
-  def foldLeft[A,B](l: List[A], z: B)(f: (B, A) => B): B = ???
+  def length[A](l: List[A]): Int = foldRight(l, 0)((_, acc) => acc + 1)
 
-  def map[A,B](l: List[A])(f: A => B): List[B] = ???
+  @tailrec def foldLeft[A,B](l: List[A], z: B)(f: (B, A) => B): B = l match {
+    case Nil => z
+    case Cons(x, xs) => foldLeft(xs, f(z, x))(f)
+  }
+
+  def length2[A](l: List[A]): Int = foldLeft(l, 0)((acc, _) => acc + 1)
+
+  def sum3(ns: List[Int]) = foldLeft(ns, 0)(_ + _)
+
+  def product3(ns: List[Double]) = foldLeft(ns, 1.0)(_ * _)
+
+  def reverse[A](l: List[A]): List[A] = foldLeft(l, Nil: List[A])((b, a) => Cons(a, b))
+
+  def foldRight2[A,B](as: List[A], z: B)(f: (A, B) => B): B = foldLeft(reverse(as), z)((b, a) => f(a, b))
+
+  def append2[A](l1: List[A], l2: List[A]): List[A] = foldRight2(l1, l2)(Cons(_, _))
+
+  def flat[A](ll: List[List[A]]): List[A] = foldRight2(ll, Nil: List[A])(append2)
+
+  def increment(l: List[Int]): List[Int] = foldRight2(l, Nil: List[Int])((a, b) => Cons(a + 1, b))
+
+  def doubleToString(l: List[Double]): List[String] = foldRight2(l, Nil: List[String])((a, b) => Cons(a.toString, b))
+
+  def map[A,B](l: List[A])(f: A => B): List[B] = foldRight2(l, Nil: List[B])((a, b) => Cons(f(a), b))
+
+  def filter[A](as: List[A])(f: A => Boolean): List[A] =
+    foldRight2(as, Nil: List[A])((a, b) => if (f(a)) Cons(a, b) else b)
+
+  def flatMap[A,B](as: List[A])(f: A => List[B]): List[B] = flat(map(as)(f))
+
+  def filter2[A](as: List[A])(f: A => Boolean): List[A] = flatMap(as)(a => if (f(a)) List(a) else Nil)
+
+  def sumListsPairwise(l1: List[Int], l2: List[Int]): List[Int] = {
+    @tailrec def step(l1: List[Int], l2: List[Int], res: List[Int]): List[Int] = {
+      (l1, l2) match {
+        case (_, Nil) => res
+        case (Nil, _) => res
+        case (Cons(x1, xs1), Cons(x2, xs2)) => step(xs1, xs2, Cons(x1 + x2, res))
+      }
+    }
+
+    reverse(step(l1, l2, Nil))
+  }
+
+  def zipWith[A,B,C](l1: List[A], l2: List[B])(f: (A, B) => C): List[C] = {
+    @tailrec def step(l1: List[A], l2: List[B], res: List[C]): List[C] = {
+      (l1, l2) match {
+        case (_, Nil) => res
+        case (Nil, _) => res
+        case (Cons(x1, xs1), Cons(x2, xs2)) => step(xs1, xs2, Cons(f(x1, x2), res))
+      }
+    }
+
+    reverse(step(l1, l2, Nil))
+  }
+}
+
+
+object Check {
+  import List._
+
+  def main(args: Array[String]): Unit = {
+    val l1 = List(1, 2, 3, 4, 5, 6)
+    val l2 = List(8, 9, 10)
+    val l3 = List(14, 15, 19, 20)
+    val d1 = List(1.5, 6.6, 8.2, 98.5)
+    val ll = List(l1, l2, l3)
+    println(zipWith(l1, l2)(_ + _))
+  }
 }
