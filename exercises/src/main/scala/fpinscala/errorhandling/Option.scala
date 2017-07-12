@@ -1,18 +1,33 @@
 package fpinscala.errorhandling
 
 
-import scala.{Option => _, Some => _, Either => _, _} // hide std library `Option`, `Some` and `Either`, since we are writing our own in this chapter
+import scala.{Either => _, Option => _, Some => _, _} // hide std library `Option`, `Some` and `Either`, since we are writing our own in this chapter
 
 sealed trait Option[+A] {
-  def map[B](f: A => B): Option[B] = ???
+  def map[B](f: A => B): Option[B] = this match {
+    case Some(v) => Some(f(v))
+    case None => None
+  }
 
-  def getOrElse[B>:A](default: => B): B = ???
+  def getOrElse[B>:A](default: => B): B = this match {
+    case Some(v) => v
+    case None => default
+  }
 
-  def flatMap[B](f: A => Option[B]): Option[B] = ???
+  def flatMap[B](f: A => Option[B]): Option[B] = this match {
+    case Some(v) => f(v)
+    case None => None
+  }
 
-  def orElse[B>:A](ob: => Option[B]): Option[B] = ???
+  def orElse[B>:A](ob: => Option[B]): Option[B] = this match {
+    case s: Some[_] => s
+    case None => ob
+  }
 
-  def filter(f: A => Boolean): Option[A] = ???
+  def filter(f: A => Boolean): Option[A] = this match {
+    case s @ Some(v) if f(v) => s
+    case _ => None
+  }
 }
 case class Some[+A](get: A) extends Option[A]
 case object None extends Option[Nothing]
@@ -38,11 +53,16 @@ object Option {
   def mean(xs: Seq[Double]): Option[Double] =
     if (xs.isEmpty) None
     else Some(xs.sum / xs.length)
-  def variance(xs: Seq[Double]): Option[Double] = ???
+  def variance(xs: Seq[Double]): Option[Double] = mean(xs).flatMap(m => mean(xs.map(x => math.pow(x - m, 2))))
 
-  def map2[A,B,C](a: Option[A], b: Option[B])(f: (A, B) => C): Option[C] = ???
+  def map2[A,B,C](a: Option[A], b: Option[B])(f: (A, B) => C): Option[C] = (a, b) match {
+    case (Some(av), Some(bv)) => Some(f(av, bv))
+    case _ => None
+  }
 
-  def sequence[A](a: List[Option[A]]): Option[List[A]] = ???
+  def sequence[A](a: List[Option[A]]): Option[List[A]] =
+    a.foldLeft(Some(List()): Option[List[A]])((bOpt, xOpt) => map2(xOpt, bOpt)(_ :: _))
 
-  def traverse[A, B](a: List[A])(f: A => Option[B]): Option[List[B]] = ???
+  def traverse[A, B](a: List[A])(f: A => Option[B]): Option[List[B]] =
+    a.foldLeft(Some(List()): Option[List[B]])((bOpt, x) => map2(f(x), bOpt)(_ :: _))
 }

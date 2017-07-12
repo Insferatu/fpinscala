@@ -40,29 +40,3 @@ object Tree {
   def mapFold[A,B](t: Tree[A])(f: A => B): Tree[B] = fold(t)(v => Leaf(f(v)): Tree[B])(Branch(_, _))
 
 }
-
-object CheckTree {
-  import Tree._
-
-  def main(args: Array[String]): Unit = {
-    val t1: Tree[Int] = Branch(
-      Branch(
-        Leaf(5),
-        Branch(
-          Leaf(8),
-          Branch(
-            Leaf(12),
-            Leaf(4)
-          )
-        )
-      ),
-      Branch(
-        Leaf(10),
-        Leaf(6)
-      )
-    )
-
-    println(depth(t1))
-    println(depthFold(t1))
-  }
-}

@@ -75,7 +75,7 @@ object List { // `List` companion object. Contains functions for creating and wo
   }
 
   @tailrec def dropWhile[A](l: List[A], f: A => Boolean): List[A] = l match {
-    case Cons(_, xs) if f(x) => dropWhile(xs, f)
+    case Cons(x, xs) if f(x) => dropWhile(xs, f)
     case ll => ll
   }
 
@@ -141,19 +141,5 @@ object List { // `List` companion object. Contains functions for creating and wo
     }
 
     reverse(step(l1, l2, Nil))
-  }
-}
-
-
-object Check {
-  import List._
-
-  def main(args: Array[String]): Unit = {
-    val l1 = List(1, 2, 3, 4, 5, 6)
-    val l2 = List(8, 9, 10)
-    val l3 = List(14, 15, 19, 20)
-    val d1 = List(1.5, 6.6, 8.2, 98.5)
-    val ll = List(l1, l2, l3)
-    println(zipWith(l1, l2)(_ + _))
   }
 }
